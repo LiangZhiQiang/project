@@ -1,0 +1,41 @@
+eclipse {
+    jdt {
+        sourceCompatibility = javaSource
+        targetCompatibility = javaTarget
+    }
+}
+
+eclipse.doLast {
+
+    logger.info "post-processing eclipse project settings..."
+    outputs.file "$projectDir/.settings/org.eclipse.core.resources.prefs"
+    outputs.file "$projectDir/.settings/org.eclipse.jdt.ui.prefs"
+    outputs.file "$projectDir/.settings/org.eclipse.jdt.core.prefs"
+    outputs.file "$projectDir/.settings/org.eclipse.wst.common.component"
+    outputs.file "$projectDir/.settings/org.eclipse.wst.common.project.facet.core.xml"
+
+    // config project's file encoding
+    def resPrefs = "$projectDir/.settings/org.eclipse.core.resources.prefs" as File
+    resPrefs << '#' << new Date()
+    resPrefs << 'eclipse.preferences.version=1'
+    resPrefs << "encoding/<project>=$javaEncoding"
+
+    // become a jst.utility project, to be referenced by web project
+    if (project.name != 'webui' && project.name != 'probemanager' && project.name != 'collector-calculator') {
+    
+        ant.get src: "$repoServer/eclipse/org.eclipse.wst.common.component", dest: "$projectDir/.settings", httpusecaches: true 
+        ant.get src: "$repoServer/eclipse/org.eclipse.wst.common.project.facet.core.xml", dest: "$projectDir/.settings", httpusecaches: true
+
+        def root = new XmlParser().parse("$projectDir/.settings/org.eclipse.wst.common.component")
+        root.'wb-module'.@'deploy-name' = "sqm-$project.name"
+        groovy.xml.XmlUtil.serialize(root, new FileOutputStream("$projectDir/.settings/org.eclipse.wst.common.component"))
+    }
+
+    // config code template
+    ant.get src: "$repoServer/eclipse/org.eclipse.jdt.ui.prefs", dest: "$projectDir/.settings", httpusecaches: true
+
+    // config code formatter
+    ant.get src: "$repoServer/eclipse/eclipse_code_formatter.prefs", dest: "$pluginDir", httpusecaches: true
+    def formatterFile = "$pluginDir/eclipse_code_formatter.prefs" as File
+    new File("$projectDir/.settings/org.eclipse.jdt.core.prefs") << formatterFile.text
+}

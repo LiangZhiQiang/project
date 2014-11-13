@@ -1,0 +1,51 @@
+configurations {
+    ecj
+}
+
+dependencies {
+    ecj 'org.eclipse.jdt.core.compiler:ecj:3.7'
+}
+
+[compileJava, compileTestJava]*.options*.encoding = javaEncoding
+sourceCompatibility = javaSource
+targetCompatibility = javaTarget
+
+warningsEnabled = [
+    'allOver-ann', 
+    'conditionAssign', 
+    'hashCode', 
+    'hiding', 
+    'emptyBlock', 
+    'null', 
+    'semicolon', 
+    'unused', 
+    'uselessTypeCheck',
+]
+
+warningsDisabled = [
+//    'unusedPrivate',
+]
+
+compileJava {
+
+    options.compiler = "org.eclipse.jdt.core.JDTCompilerAdapter"
+    def args = ['-enableJavadoc']
+
+    if(warningsEnabled) {
+        args << "-warn:+${warningsEnabled.join(',')}"
+    }
+
+    if(warningsDisabled) {
+        args << "-warn:-${warningsDisabled.join(',')}"
+    }
+
+    options.define(compilerArgs: args)
+
+    doFirst {
+        ClassLoader antClassLoader = org.apache.tools.ant.Project.class.classLoader
+        
+        configurations.ecj.each { File f -> 
+            antClassLoader.addURL(f.toURI().toURL())
+        }
+    }
+}

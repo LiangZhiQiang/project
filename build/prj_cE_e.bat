@@ -1,0 +1,1 @@
+..\tools\prj -p ..\src cleanEclipse eclipse

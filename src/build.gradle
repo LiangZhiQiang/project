@@ -1,0 +1,155 @@
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '1.0-milestone-3'
+    scriptFile = 'prj'
+}
+
+subprojects {
+    pluginDir = "$rootProject.projectDir/.plugins"
+
+    apply plugin: 'java'
+    apply plugin: 'eclipse'
+      apply from: "$pluginDir/compiler.gradle"
+
+    apply plugin: 'code-quality'
+      apply from: "$pluginDir/emmaFull.gradle"
+
+    checkstyleConfigFileName = "$pluginDir/checkstyle_ruleset.xml"
+    checkstyleResultsDirName = "$reportsDirName/checkstyle/"
+    codeNarcConfigFileName = "$pluginDir/codeNarc_ruleset.xml"
+
+    configurations {
+        js 
+        css 
+        javancss
+    }
+
+    // source dirs & eclipse project settings
+    sourceSets {
+        main {
+            java.srcDirs = [
+                'prod/java', 
+                'prod/service', 
+                'prod/controller', 
+            ]
+            resources.srcDirs = [
+                'prod/java'
+            ]
+        }
+        test {
+            java.srcDirs = [
+                'test/integration', 
+                'test/unit', 
+            ]
+            resources.srcDirs = [
+                'test/integration', 
+                'test/unit', 
+            ]
+        }
+    }
+
+    eclipse {
+        project {
+            natures 'org.eclipse.wst.common.project.facet.core.nature', 'org.eclipse.wst.common.modulecore.ModuleCoreNature'
+        }
+    }
+
+    task initDirs << {
+        // create source folders
+        sourceSets.all*.java.srcDirs*.each { 
+            it.mkdirs() 
+        }
+        sourceSets.all*.resources.srcDirs*.each { 
+            it.mkdirs() 
+        }
+
+        // create product folders
+        if (project.name != 'webui' && project.name != 'collector-calculator' && project.name != 'probemanager') 
+        {
+            new File("$projectDir/prod/conf").mkdir()
+            new File("$projectDir/prod/i18n").mkdir()
+
+            if (project.name != 'model' ) new File("$projectDir/prod/view").mkdir()
+        }
+
+        // create root package
+        if (project.name != 'webui' && project.name != 'model' && project.name != 'collector-calculator' && project.name != 'probemanager') 
+        {
+            sourceSets.all*.java.srcDirs*.each { srcDir ->
+                new File(srcDir, "com/huawei/sqm/${project.name.replaceAll '-', '/'}").mkdirs()
+            }
+        }
+    }
+    eclipseClasspath.dependsOn initDirs
+
+    eclipse.doLast {
+        logger.info "post-processing eclipse project settings..."
+        outputs.file "$projectDir/.settings/org.eclipse.core.resources.prefs"
+        outputs.file "$projectDir/.settings/org.eclipse.jdt.ui.prefs"
+        outputs.file "$projectDir/.settings/org.eclipse.jdt.core.prefs"
+        outputs.file "$projectDir/.settings/org.eclipse.wst.common.component"
+        outputs.file "$projectDir/.settings/org.eclipse.wst.common.project.facet.core.xml"
+
+        // config project's file encoding
+        def os = new PrintWriter(new FileWriter("$projectDir/.settings/org.eclipse.core.resources.prefs"))
+        os.println '#' + new Date()
+        os.println 'eclipse.preferences.version = 1'
+        os.println "encoding/<project>=$javaEncoding"
+        os.close()
+
+        // become a jst.utility project, to be referenced by web project
+        if (project.name != 'webui' && project.name != 'collector-calculator' && project.name != 'probemanager')
+        {
+            copy {
+                into "$projectDir/.settings"
+                from "$pluginDir/org.eclipse.wst.common.component"
+            }
+
+            copy {
+                into "$projectDir/.settings"
+                from "$pluginDir/org.eclipse.wst.common.project.facet.core.xml"
+            }
+
+            def root = new XmlParser().parse("$projectDir/.settings/org.eclipse.wst.common.component")
+            root.'wb-module'.@'deploy-name' = "sqm-$project.name"
+            groovy.xml.XmlUtil.serialize(root, new FileOutputStream("$projectDir/.settings/org.eclipse.wst.common.component"))
+        }
+
+        // config code template
+        copy {
+            into "$projectDir/.settings"
+            from "$pluginDir/org.eclipse.jdt.ui.prefs"
+        }
+
+        def formatterFile = new File("$pluginDir/eclipse_code_formatter.prefs")
+        new File("$projectDir/.settings/org.eclipse.jdt.core.prefs") << formatterFile.text
+    }
+
+    task javancss(dependsOn: compileTestJava) << {
+        //Line of code stats
+        def reportPrefix = 'build/javancss_'
+
+        ant {
+            taskdef(name: 'javancss', classname: 'javancss.JavancssAntTask', classpath: configurations.javancss.asPath)
+            javancss(srcdir: 'prod', includes: '**/*.java', abortOnFail: 'false', generateReport:'true', outputfile:"${reportPrefix}prod_metrics.xml", format: 'xml')
+            javancss(srcdir: 'test', includes: '**/*.java', abortOnFail: 'false', generateReport:'true', outputfile:"${reportPrefix}test_metrics.xml", format: 'xml')
+        }
+    }
+
+}
+
+
+
+/*
+ * 下载模板文件
+ * targetPath - 本地目标路径
+ * tmplUrl - 模板URL
+ * forceReplace - 是否强制覆盖
+ */
+def downTemplate(targetPath, tmplUrl, forceReplace = false) 
+{
+    def targetFile = targetPath as File
+    if (!targetFile.exists() || forceReplace) {
+        ant.get src: "$tmplUrl", dest: "$targetPath", httpusecaches: true
+    }
+}

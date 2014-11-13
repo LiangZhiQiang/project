@@ -1,0 +1,37 @@
+apply plugin: 'java'
+
+configurations {
+    emma
+}
+
+dependencies {
+    emma "emma:emma:2.0.5312"
+    emma "emma:emma_ant:2.0.5312"
+}
+
+def emmaConvention = new EmmaPluginConvention(project)
+project.convention.plugins.emma = emmaConvention
+
+class EmmaPluginConvention {
+    def verbosityLevel = "info"
+    def reportPath;
+    def coverageFileName;
+    def tmpDir;
+    def instrDir;
+    def metaDataFilePath;
+
+    def emma(Closure close){
+        close.delegate = this;
+        close.run()
+    }
+
+    EmmaPluginConvention(Project project) {
+    
+        reportPath       = "${project.reportsDir.absolutePath}/emma"
+        coverageFileName = "coverage"
+        tmpDir           = "${project.buildDir}/tmp/emma"
+        instrDir         = "${tmpDir}/instr"
+        metaDataFilePath = "${tmpDir}/metadata.emma"
+    }
+
+}

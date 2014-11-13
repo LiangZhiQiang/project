@@ -1,0 +1,87 @@
+apply plugin: 'java'
+apply plugin: 'project-report'
+apply plugin: 'eclipse'
+
+//////////////////
+//configurations////
+
+cfg=[
+    'libDir': 'libs',
+    'cssDir': 'css',
+    'jsDir': 'js',
+]
+
+repositories{
+    mavenRepo urls: [
+        "http://repository.springsource.com/maven/bundles/release",       // Spring Source Bundle Releases
+        "http://repository.sprinfsource.com/maven/bundles/external",      // External Bundle Releases
+//        'http://repository.springsource.com/maven/libraries/release',  // Spring Source Library Releases
+//        'http://repository.sprinfsource.com/maven/libraries/external', // External Library Releases
+    ]
+    mavenCentral()
+}
+
+apply from: 'depends.gradle'
+
+////task
+
+//update jar file
+task syncJars(dependsOn: ['init', eclipse], type: Sync){
+    into "$cfg.libDir"
+    from "${System.properties['user.home']}/.gradle/cache"
+}
+
+// download js lib
+task dlJs(dependsOn: 'init') << {
+    js.each{ file, url ->
+        wget file: "$file", src:"$url", dest: "$cfg.jsDir"
+    }
+    copy{
+        from 'local-lib/js'
+        into "$cfg.jsDir"
+        include '**/*.js'
+    }
+}
+
+// download css lib
+task dlCss(dependsOn: 'init') << {
+    js.each{ file, url ->
+        wget file: "$file", src:"$url", dest: "$cfg.cssDir"
+    }
+    copy{
+        from 'local-lib/css'
+        into "$cfg.cssDir"
+        include '**/*.css'
+    }
+}
+
+// using 'eclipse' task to download jar & siurces from mvnRepo
+task dlAll(dependsOn: [eclipse, syncJars, dlCss]) << { }
+
+
+task init << {
+    cfg.each { name, dir ->
+        new File(dir).mkdir();
+    }
+}
+
+task cleanDependencies(type: Delete) {
+    logger.info "clean all dependencies..."
+    cfg.each { name, dir ->
+        delete dir 
+    }
+}
+clean.dependsOn cleanDependencies
+
+//common methods/////////////
+def wget (params) {
+    def file = new File("$params.dest/$params.file")
+    logger.debug "${file.absolutePath} exists? ${file.exists()}"
+
+    if (file.exists()) { 
+        logger.info "$file already exists, will not download"
+        return
+    }
+    boolean useCache = params.useCache ? params.useCache : true
+    ant.get src: "$params.src", dest: "$params.dest", httpusecache: useCache
+}

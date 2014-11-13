@@ -1,0 +1,36 @@
+dependencies {
+
+    runtime (
+        'javax.persistence:com.springsource.javax.persistence:1.99.0',
+        'javax.xml.stream:com.springsource.javax.xml.stream:1.0.1',
+        'javax.servlet:com.springsource.javax.servlet:2.5.0',
+        'javax.portlet:com.springsource.javax.portlet:1.0.0',
+        'javax.transaction:com.springsource.javax.transaction:1.1.0',
+        'javax.servlet:com.springsource.javax.servlet.jsp:2.1.0',
+        'javax.validation:com.springsource.javax.validation:1.0.0.GA',
+    )
+
+    runtime (
+        'javax.servlet:com.springsource.javax.servlet.jsp.jstl:1.2.0.v20110728',
+
+    )
+
+    runtime (
+        'org.springframework:org.springframework.web.servlet:3.0.6.RELEASE',
+        'org.springframework:org.springframework.test:3.0.6.RELEASE',
+
+    )
+
+
+
+
+}
+
+
+js = [
+
+]
+
+css = [
+
+]
