@@ -21,7 +21,7 @@ eclipse.doLast {
     resPrefs << "encoding/<project>=$javaEncoding"
 
     // become a jst.utility project, to be referenced by web project
-    if (project.name != 'webui' && project.name != 'probemanager' && project.name != 'collector-calculator') {
+    if (project.name != 'webui') {
     
         ant.get src: "$repoServer/eclipse/org.eclipse.wst.common.component", dest: "$projectDir/.settings", httpusecaches: true 
         ant.get src: "$repoServer/eclipse/org.eclipse.wst.common.project.facet.core.xml", dest: "$projectDir/.settings", httpusecaches: true

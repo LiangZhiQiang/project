@@ -64,7 +64,7 @@ subprojects {
         }
 
         // create product folders
-        if (project.name != 'webui' && project.name != 'collector-calculator' && project.name != 'probemanager') 
+        if (project.name != 'webui') 
         {
             new File("$projectDir/prod/conf").mkdir()
             new File("$projectDir/prod/i18n").mkdir()
@@ -73,7 +73,7 @@ subprojects {
         }
 
         // create root package
-        if (project.name != 'webui' && project.name != 'model' && project.name != 'collector-calculator' && project.name != 'probemanager') 
+        if (project.name != 'webui' && project.name != 'model') 
         {
             sourceSets.all*.java.srcDirs*.each { srcDir ->
                 new File(srcDir, "com/huawei/sqm/${project.name.replaceAll '-', '/'}").mkdirs()
@@ -98,7 +98,7 @@ subprojects {
         os.close()
 
         // become a jst.utility project, to be referenced by web project
-        if (project.name != 'webui' && project.name != 'collector-calculator' && project.name != 'probemanager')
+        if (project.name != 'webui')
         {
             copy {
                 into "$projectDir/.settings"
