@@ -98,18 +98,18 @@ subprojects {
         os.close()
 
         // become a jst.utility project, to be referenced by web project
+        copy {
+            into "$projectDir/.settings"
+            from "$pluginDir/org.eclipse.wst.common.component"
+        }
+
+        copy {
+            into "$projectDir/.settings"
+            from "$pluginDir/org.eclipse.wst.common.project.facet.core.xml"
+        }
+
         if (project.name != 'webui')
         {
-            copy {
-                into "$projectDir/.settings"
-                from "$pluginDir/org.eclipse.wst.common.component"
-            }
-
-            copy {
-                into "$projectDir/.settings"
-                from "$pluginDir/org.eclipse.wst.common.project.facet.core.xml"
-            }
-
             def root = new XmlParser().parse("$projectDir/.settings/org.eclipse.wst.common.component")
             root.'wb-module'.@'deploy-name' = "sqm-$project.name"
             groovy.xml.XmlUtil.serialize(root, new FileOutputStream("$projectDir/.settings/org.eclipse.wst.common.component"))
